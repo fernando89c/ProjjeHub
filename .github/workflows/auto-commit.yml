@@ -1,0 +1,85 @@
+name: Auto Commit Changes
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      # Frontend
+      - 'frontend/src/**'
+      - 'frontend/public/**'
+      - 'frontend/package.json'
+      # Backend
+      - 'backend/src/**'
+      - 'backend/prisma/**'
+      - 'backend/package.json'
+
+jobs:
+  auto-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Git
+        run: |
+          git config --global user.name 'GitHub Actions Bot'
+          git config --global user.email 'actions@github.com'
+
+      - name: Check for significant changes
+        id: check-changes
+        run: |
+          # Verifica mudanças no frontend
+          FRONTEND_CHANGES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- frontend/)
+          BACKEND_CHANGES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- backend/)
+
+          # Analisa tipo de mudança
+          if [[ -n "$FRONTEND_CHANGES" ]]; then
+            echo "::set-output name=component::frontend"
+            echo "::set-output name=has_changes::true"
+          elif [[ -n "$BACKEND_CHANGES" ]]; then
+            echo "::set-output name=component::backend"
+            echo "::set-output name=has_changes::true"
+          fi
+
+      - name: Create feature branch
+        if: steps.check-changes.outputs.has_changes == 'true'
+        run: |
+          COMPONENT=${{ steps.check-changes.outputs.component }}
+          BRANCH_NAME="feature/auto-update-${COMPONENT}-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b $BRANCH_NAME
+          git add .
+          git commit -m "feat: Atualização automática - ${COMPONENT} $(date +%Y-%m-%d)"
+          git push origin $BRANCH_NAME
+
+      - name: Create Pull Request
+        if: steps.check-changes.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: '🤖 Atualização Automática - ${{ steps.check-changes.outputs.component }}'
+          body: |
+            ## Atualização Automática
+
+            Esta é uma atualização automática gerada pelo GitHub Actions devido a alterações significativas no código.
+
+            ### Componente Alterado
+            - ${{ steps.check-changes.outputs.component }}
+
+            ### 📝 Notas
+            - Este PR foi gerado automaticamente
+            - Por favor, revise as alterações antes de fazer o merge
+
+            ### ✅ Checklist
+            - [ ] Código foi testado
+            - [ ] Documentação foi atualizada (se necessário)
+            - [ ] Não há conflitos com a branch principal
+
+          branch: feature/auto-update-${{ steps.check-changes.outputs.component }}
+          base: develop
+          labels: |
+            automated
+            ${{ steps.check-changes.outputs.component }}
+          draft: true
