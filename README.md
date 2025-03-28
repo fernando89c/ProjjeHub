@@ -1,10 +1,10 @@
 # ProjjeHub
 
-Sistema de gerenciamento de projetos e tarefas desenvolvido com React e Node.js.
+Sistema de gerenciamento de projetos e tarefas.
 
 ## Estrutura do Projeto
 
-- `frontend/`: Aplicação React
+- `frontend/`: Aplicação Quasar/Vue.js
 - `backend/`: API Node.js
 
 ## Requisitos
@@ -34,10 +34,11 @@ npm run dev
 
 - Frontend:
 
-  - React
-  - Next.js
-  - Tailwind CSS
-  - Shadcn/ui
+  - Vue.js 3
+  - Quasar Framework v2
+  - TypeScript
+  - Vite
+  - Vue Router
 
 - Backend:
   - Node.js
